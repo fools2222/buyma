@@ -7,7 +7,7 @@
 import customtkinter as ctk
 import sqlite3
 import csv
-import random  # ランダムな値を生成するためのモジュール
+import random  
 import tkinter.ttk as ttk
 
 # データベースの初期化（設定情報の保存用）
