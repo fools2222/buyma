@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[3]:
 
 
 import customtkinter as ctk
 import sqlite3
 import csv
-import random  
+import random  # ランダムな値を生成するためのモジュール
 import tkinter.ttk as ttk
 
 # データベースの初期化（設定情報の保存用）
@@ -46,63 +46,28 @@ class App(ctk.CTk):
         self.title("BUYMA自動出品ツール　ver1.00")
         self.geometry("600x500")
 
-        # 最初はタブビューを表示しない
-        self.tabview = None
-        self.create_login_screen()
-
-    def create_login_screen(self):
-        '''ログイン画面を作成'''
-        self.login_frame = ctk.CTkFrame(self)
-        self.login_frame.pack(expand=True, fill="both", padx=20, pady=20)
-
-        ctk.CTkLabel(self.login_frame, text="email").pack(pady=10)
-        self.username_entry = ctk.CTkEntry(self.login_frame)
-        self.username_entry.pack()
-
-        ctk.CTkLabel(self.login_frame, text="パスワード").pack(pady=10)
-        self.password_entry = ctk.CTkEntry(self.login_frame, show="*")
-        self.password_entry.pack()
-
-        login_button = ctk.CTkButton(self.login_frame, text="ログイン", command=self.check_login)
-        login_button.pack(pady=20)
-
-        self.message_label = ctk.CTkLabel(self.login_frame, text="")
-        self.message_label.pack()
-
-    def check_login(self):
-        '''ログイン情報を確認'''
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-        if username == "user" and password == "pass":
-            self.message_label.configure(text="ログイン成功", text_color="green")
-            self.show_main_tabs()  # ログイン成功時にメイン画面へ移行
-        else:
-            self.message_label.configure(text="ユーザー名またはパスワードが違います", text_color="red")
-
-    def show_main_tabs(self):
-        '''ログイン成功後に設定画面とCSVファイル選択画面のタブを表示'''
-        self.login_frame.destroy()  # ログイン画面を削除
-
         # タブビューを作成
         self.tabview = ctk.CTkTabview(self, width=500, height=500)
         self.tabview.pack(expand=True, fill="both")
 
         # タブの追加
-        self.file_tab = self.tabview.add("ファイル選択")
+        self.main_tab = self.tabview.add("メイン画面")
+        self.login_tab = self.tabview.add("ログイン")
         self.settings_tab = self.tabview.add("システム設定")
 
         # 各タブのUIを設定
-        self.create_file_tab()
+        self.create_main_tab()
+        self.create_login_tab()
         self.create_settings_tab()
 
-    def create_file_tab(self):
-        '''ファイル選択タブのUIをセットアップ'''
+    def create_main_tab(self):
+        '''メイン画面のUIをセットアップ'''
         # ファイルパスを表示するテキストボックス
-        self.textbox = ctk.CTkEntry(master=self.file_tab, placeholder_text="CSV ファイルを選択", width=120)
+        self.textbox = ctk.CTkEntry(master=self.main_tab, placeholder_text="CSV ファイルを選択", width=120)
         self.textbox.grid(row=0, column=0, padx=10, pady=(0, 0), sticky="ew")
 
         # ファイル選択ボタン
-        self.button_select = ctk.CTkButton(master=self.file_tab, 
+        self.button_select = ctk.CTkButton(master=self.main_tab, 
                                            fg_color="transparent", border_width=2, 
                                            text_color=("gray10", "#DCE4EE"), 
                                            command=self.button_select_callback, 
@@ -111,7 +76,7 @@ class App(ctk.CTk):
 
         # 結果表示用のテーブルを作成
         columns = ("ステータス", "エラー数", "商品名")
-        self.table = ttk.Treeview(self.file_tab, columns=columns, show="headings", height=10)
+        self.table = ttk.Treeview(self.main_tab, columns=columns, show="headings", height=10)
 
         # 各列のヘッダー設定
         self.table.heading("ステータス", text="ステータス")
@@ -127,38 +92,32 @@ class App(ctk.CTk):
         self.table.grid(row=1, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
 
         # 行のリサイズを許可する（特にログ用テキストエリアの行）
-        self.file_tab.grid_rowconfigure(2, weight=1)  # テキストエリアの行がリサイズされるように
+        self.main_tab.grid_rowconfigure(2, weight=1)  # テキストエリアの行がリサイズされるように
 
         # ログ表示用のテキストエリアを追加
-        self.log_textbox = ctk.CTkTextbox(master=self.file_tab, height=10, wrap="word")
+        self.log_textbox = ctk.CTkTextbox(master=self.main_tab, height=10, wrap="word")
         self.log_textbox.grid(row=2, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
         # ボタン行のレイアウト調整
-        self.file_tab.grid_columnconfigure(0, weight=1)
-        self.file_tab.grid_columnconfigure(1, weight=1)
-        self.file_tab.grid_columnconfigure(2, weight=1)
-        
-        # 下書きモードボタン
-        self.draft_mode_button = ctk.CTkButton(master=self.file_tab, text="下書きモード", command=self.draft_mode_callback)
-        self.draft_mode_button.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+        self.main_tab.grid_columnconfigure(0, weight=1)
+        self.main_tab.grid_columnconfigure(1, weight=1)
+        self.main_tab.grid_columnconfigure(2, weight=1)
 
-        # 出品モードボタン
-        self.listing_mode_button = ctk.CTkButton(master=self.file_tab, text="出品モード", command=self.listing_mode_callback)
-        self.listing_mode_button.grid(row=3, column=1, padx=10, pady=10, sticky="ew")
+        # ラジオボタンの変数
+        self.mode_var = ctk.StringVar(value="下書きモード")
+
+        # ラジオボタン「下書きモード」
+        self.draft_mode_radio = ctk.CTkRadioButton(master=self.main_tab, text="下書きモード", variable=self.mode_var, value="下書きモード")
+        self.draft_mode_radio.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+
+        # ラジオボタン「出品モード」
+        self.listing_mode_radio = ctk.CTkRadioButton(master=self.main_tab, text="出品モード", variable=self.mode_var, value="出品モード")
+        self.listing_mode_radio.grid(row=3, column=1, padx=10, pady=10, sticky="ew")
 
         # 実行ボタン（右側に配置）
-        self.button_run = ctk.CTkButton(master=self.file_tab, command=self.button_open_callback, text="実行")
+        self.button_run = ctk.CTkButton(master=self.main_tab, command=self.button_open_callback, text="実行")
         self.button_run.grid(row=3, column=2, padx=10, pady=10, sticky="ew")
 
-    def draft_mode_callback(self):
-        '''下書きモードボタンの処理'''
-        self.log_textbox.insert("end", "下書きモードが選択されました。\n")
-
-    def listing_mode_callback(self):
-        '''出品モードボタンの処理'''
-        self.log_textbox.insert("end", "出品モードが選択されました。\n")
-
-        
     def button_select_callback(self):
         '''ファイル選択ダイアログを開いて、選択されたファイルパスをテキストボックスに表示'''
         file_name = ctk.filedialog.askopenfilename(filetypes=[("CSV ファイル", "*.csv")])
@@ -168,6 +127,9 @@ class App(ctk.CTk):
 
     def button_open_callback(self):
         '''選択されたCSVファイルを開いて表示'''
+        selected_mode = self.mode_var.get()  # 選択されたモードを取得
+        self.log_textbox.insert("end", f"{selected_mode}が選択されました。\n")
+
         file_name = self.textbox.get()
         if file_name:
             try:
@@ -185,9 +147,33 @@ class App(ctk.CTk):
         else:
             self.log_textbox.insert("end", "ファイルが選択されていません。\n")
 
+    def create_login_tab(self):
+        '''ログイン画面のUIをセットアップ'''
+        ctk.CTkLabel(self.login_tab, text="email").grid(row=0, column=0, padx=20, pady=10, sticky="w")
+        self.username_entry = ctk.CTkEntry(self.login_tab)
+        self.username_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew", columnspan=2)
+
+        ctk.CTkLabel(self.login_tab, text="パスワード").grid(row=1, column=0, padx=20, pady=10, sticky="w")
+        self.password_entry = ctk.CTkEntry(self.login_tab, show="*")
+        self.password_entry.grid(row=1, column=1, padx=10, pady=10, sticky="ew", columnspan=2)
+
+        login_button = ctk.CTkButton(self.login_tab, text="ログイン", command=self.check_login)
+        login_button.grid(row=2, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
+
+        self.message_label = ctk.CTkLabel(self.login_tab, text="")
+        self.message_label.grid(row=3, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
+
+    def check_login(self):
+        '''ログイン情報を確認'''
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        if username == "user" and password == "pass":
+            self.message_label.configure(text="ログイン成功", text_color="green")
+        else:
+            self.message_label.configure(text="ユーザー名またはパスワードが違います", text_color="red")
+
     def create_settings_tab(self):
         '''システム設定タブのUIをセットアップ'''
-        # 列方向のマスのレイアウトを設定
         self.settings_tab.grid_columnconfigure(0, weight=1)
         self.settings_tab.grid_columnconfigure(1, weight=1)
         self.settings_tab.grid_columnconfigure(2, weight=1)
